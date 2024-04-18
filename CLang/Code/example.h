@@ -1,17 +1,37 @@
+// WOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+// HELLO WORLD
+//Copyright FoxaXu
+//Calcium Core Service
+
+//FoxaXuDecvin
+// 2024.4.18
+
+//Follow Me
+// BiliBili:   https://space.bilibili.com/1426318422
+// Github: https://github.com/FoxaXuDecvin
+// site:      https://www.foxaxu.com   &&   https://www.foxaxu.top
+// ....
+
 #pragma once
 
 #include"../shload.h"
 
+//String Version
+int ccversion = 1000;
+
 //Args API
 //format
-//         [cl] <run/install> <softwareid> </no_launchscreen> </loadmode>
+//         goto outcmdHelp
 
 int argslonger = 0;
 int runmode = -1;
+
+string ccversion_str = to_string(ccversion);
+
+string cfg_load = "calcium_config.cfg";
 string rtpath = "runtools/";
 string runlib = "runlib/";
 string rtemp = "temp/";
-string netlib = "netlib/";
 string rtappdata = "rtappdata/";
 
 string lbtemp = "def";
@@ -21,7 +41,7 @@ bool displayLaunchScreen = true;
 string sfid = "def";
 
 void outcmdHelp() {
-	_prtoutmsg("	        [cl] <run/install/uninstall/update> <softwareid> </no_launchscreen> </loadmode>");
+	_prtoutmsg("	        [cl] -<run/install/uninstall/update> <softwareid> </no_launchscreen> </loadmode>");
 }
 
 void argsApi(string args$api) {
@@ -29,37 +49,37 @@ void argsApi(string args$api) {
 	//if (argsSetExit) set true
 	//Process will close after args run
 
-	if (args$api == "run") {
+	if (args$api == "-run") {
 		argslonger++;
 		runmode = 1001;
 		return;
 	}
 
-	if (args$api == "install") {
+	if (args$api == "-install") {
 		argslonger++;
 		runmode = 1002;
 		return;
 	}
 
-	if (args$api == "uninstall") {
+	if (args$api == "-uninstall") {
 		argslonger++;
 		runmode = 1003;
 		return;
 	}
 
-	if (args$api == "update") {
+	if (args$api == "-update") {
 		argslonger++;
 		runmode = 1004;
 		return;
 	}
 
-	if (args$api == "test_nullint") {
+	if (args$api == "-test_nullint") {
 		argslonger++;
 		runmode = 666;
 		return;
 	}
 
-	if (args$api == "no_launchscreen") {
+	if (args$api == "-no_launchscreen") {
 		argslonger++;
 		displayLaunchScreen = false;
 		return;
@@ -139,22 +159,11 @@ bool removeSoftwareAPi(string sfid_m) {
 }
 
 int InstallSoftwareAPI() {
-	if (_dapi_ExistFolder_check(netlib)) {
-		_dapi_mkdir(netlib);
-		if (!_urldown_api_nocache("https://calcium.foxaxu.com/cw_tsc/rt.txt", rtlist_local)) {
-			_prtendl();
-			_prtendl();
-			_prtoutmsg("Failed to get software list");
-			_prtoutmsg("Software :  " + sfid);
-			_prtoutmsg("	        Check your internet and try again");
-			return 4004;
-		}
-	}
-
-	_prtoutmsg("Searching ...");
-	rtlist_prf = _load_sipcfg(rtlist_local, sfid);
+	rtlist_prf = defserver  + sfid + ".txt";
 
 	rtlist_rtp = runlib + "/" + sfid + ".txt";
+	_prtoutmsg("Get SFID Profile from £º  " + rtlist_prf);
+
 	if (!_urldown_api_nocache(rtlist_prf, rtlist_rtp)) {
 		_prtendl();
 		_prtendl();
@@ -171,7 +180,7 @@ int InstallSoftwareAPI() {
 		system(dlbuffer.c_str());
 	}
 	if (_Run_SysKernel == "Linux") {
-		dlbuffer = "./BatchDownloadScript \"local\" \"" + rtlist_rtp + "\" \"" + rtpath + "\"";
+		dlbuffer = "./BatchDownloadScript.lux \"local\" \"" + rtlist_rtp + "\" \"" + rtpath + "\"";
 		system(dlbuffer.c_str());
 	}
 
@@ -202,8 +211,7 @@ int AppRunAuto(string file, string arguments) {
 // 1003 Uninstall
 // 1004 Update
 int _HeadMainLoad() {
-	rtlist_local = netlib + "/" + "rtlist.txt";
-	if (!_dapi_ExistFolder_check("temp")) {
+	if (!check_file_existence(cfg_load)) {
 		_prtoutmsg("Press Enter to Setup Calcium ");
 
 		_pause();
@@ -211,15 +219,38 @@ int _HeadMainLoad() {
 		_dapi_mkdir(rtpath);
 		_dapi_mkdir(runlib);
 		_dapi_mkdir(rtemp);
-		_dapi_mkdir(netlib);
 		_dapi_mkdir(rtappdata);
 
-		_urldown_api("https://calcium.foxaxu.com/appcore/BatchDownloadScript.exe", "BatchDownloadScript.exe");
+		_fileapi_createmark(cfg_load, "//Calcium Config Profile");
+		_write_sipcfg(cfg_load, "CurrentVersion", ccversion_str);
+		_write_sipcfg(cfg_load, "geturl", "https://calciumservices.foxaxu.com/CCore/cc_list/");
+		_prtoutmsg("Downloading..   BatchDownloadScript");
+		_urldown_api("https://dl.foxaxu.com/chfs/shared/calcium/appcore/BatchDownloadScript.exe?v=1", "BatchDownloadScript.exe");
+		_urldown_api("https://dl.foxaxu.com/chfs/shared/calcium/appcore/BatchDownloadScript.lux?v=1", "BatchDownloadScript.lux");
+
+		_prtoutmsg("Create New Config ... ");
 	}
+	//Load Config
+	_prtendl();
+	_prtendl();
+
+	defserver = _load_sipcfg(cfg_load, "geturl");
+
+	if (_load_sipcfg(cfg_load, "CurrentVersion") != ccversion_str) {
+		_prtoutmsg("This Profile is used for old calcium version");
+		_prtoutmsg("If the program appears error. Please delete " + ccversion_str);
+		_pause();
+
+		cleanConsole();
+	}
+
 	if (runmode == -1) {
 		_prtoutmsg("Calcium Software Core ");
-		_prtoutmsg("format ");
+		_prtoutmsg("Based on OpenCLT ");
+		_prtoutmsg("Github :  https://github.com/FoxaXuDecvin/calciumsoftwarecore");
+		_prtoutmsg(" command format :  ");
 		outcmdHelp();
+		_prtendl();
 		return 4004;
 	}
 	if (runmode == 1001) {
@@ -339,8 +370,8 @@ int _HeadMainLoad() {
 
 		_fileapi_CpFile(rlib_c, rlib_c + "-old");
 		_fileapi_del(rlib_c);
-		
-		rtlist_prf = _load_sipcfg(rtlist_local, sfid);
+
+		rtlist_prf = defserver + sfid + ".txt";
 
 		if (!_urldown_api_nocache(rtlist_prf, rlib_c)) {
 			_fileapi_CpFile(rlib_c + "-old", rlib_c);

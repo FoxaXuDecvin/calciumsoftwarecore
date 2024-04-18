@@ -22,8 +22,6 @@ int rc_result_exit;
 
 string sfid_ver;
 
-string rtlist_local;
-
 string rtlist_prf;
 
 string rtlist_rtp;
@@ -34,3 +32,5 @@ string $quomark = "\"";
 string $sqmark = "\'";
 
 string araBuffer;
+
+string defserver;
