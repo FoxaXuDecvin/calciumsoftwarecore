@@ -17,7 +17,7 @@
 #include"../shload.h"
 
 //String Version
-int ccversion = 1000;
+int ccversion = 1002;
 
 //Args API
 //format
@@ -41,7 +41,7 @@ bool displayLaunchScreen = true;
 string sfid = "def";
 
 void outcmdHelp() {
-	_prtoutmsg("	        [cl] -<run/install/uninstall/update> <softwareid> </no_launchscreen> </loadmode>");
+	_prtoutmsg("	        [cl] -<run/install/uninstall/update/coreupdate> <softwareid> </no_launchscreen> </loadmode>");
 }
 
 void argsApi(string args$api) {
@@ -70,6 +70,12 @@ void argsApi(string args$api) {
 	if (args$api == "-update") {
 		argslonger++;
 		runmode = 1004;
+		return;
+	}
+
+	if (args$api == "-coreupdate") {
+		argslonger++;
+		runmode = 10041;
 		return;
 	}
 
@@ -187,6 +193,50 @@ int InstallSoftwareAPI() {
 	return 0;
 }
 
+bool UpdateCore() {
+	if (VerSignID == 1) {
+		_prtoutmsg("Warning you are using Build Version.");
+		_prtoutmsg("This version is for compilation testing and is not a release version");
+		_prtoutmsg("If you're not a tester, you shouldn't get this release");
+		_prtoutmsg("We can only help you update to the release version");
+		_prtendl();
+	}
+
+	upd_cache = _load_sipcfg(cfg_load, "coreurl");
+
+	if (!_urldown_api_nocache(_load_sipcfg(cfg_load, "coreupd"), "coreupd.tmp")) {
+		_prtoutmsg("Failed to connect server.");
+		_prtoutmsg("Server URL :  " + _load_sipcfg(cfg_load, "coreupd"));
+		_prtendl();
+		return false;
+	}
+
+	if (ccversion_str == _fileapi_textread("coreupd.tmp", 1)) {
+		_prtoutmsg("Calcium Software Core is latest version");
+		return true;
+	}
+
+	_prtoutmsg("Please wait a moment We are updating Calcium Software Core");
+
+	rename("Calcium.exe", "Calcium-old.exe");
+	rename("Calcium.lux", "Calcium-old.lux");
+	_fileapi_del("coreupd.tmp");
+
+	if (!_urldown_api_nocache(_load_sipcfg(cfg_load, "coreurl") + "Calcium.exe.txt", "Calcium.exe")) {
+		_prtoutmsg("Failed to connect server.");
+		_prtoutmsg("Server URL :  " + _load_sipcfg(cfg_load, "coreupd"));
+		_prtendl();
+		return false;
+	}
+	if (!_urldown_api_nocache(_load_sipcfg(cfg_load, "coreurl") + "Calcium.lux.txt", "Calcium.lux")) {
+		_prtoutmsg("Failed to connect server.");
+		_prtoutmsg("Server URL :  " + _load_sipcfg(cfg_load, "coreupd"));
+		_prtendl();
+		return false;
+	}
+
+	return true;
+}
 
 int AppRunAuto(string file, string arguments) {
 	if (_Run_SysKernel == "Win32") {
@@ -211,6 +261,9 @@ int AppRunAuto(string file, string arguments) {
 // 1003 Uninstall
 // 1004 Update
 int _HeadMainLoad() {
+
+	VerSignID = 1;
+
 	if (!check_file_existence(cfg_load)) {
 		_prtoutmsg("Press Enter to Setup Calcium ");
 
@@ -224,11 +277,20 @@ int _HeadMainLoad() {
 		_fileapi_createmark(cfg_load, "//Calcium Config Profile");
 		_write_sipcfg(cfg_load, "CurrentVersion", ccversion_str);
 		_write_sipcfg(cfg_load, "geturl", "https://calciumservices.foxaxu.com/CCore/cc_list/");
+		_write_sipcfg(cfg_load, "coreupd", "https://calciumservices.foxaxu.com/CCore/core_version.txt");
+		_write_sipcfg(cfg_load, "coreurl", "https://calciumservices.foxaxu.com/CCore/core/");
 		_prtoutmsg("Downloading..   BatchDownloadScript");
 		_urldown_api("https://dl.foxaxu.com/chfs/shared/calcium/appcore/BatchDownloadScript.exe?v=1", "BatchDownloadScript.exe");
 		_urldown_api("https://dl.foxaxu.com/chfs/shared/calcium/appcore/BatchDownloadScript.lux?v=1", "BatchDownloadScript.lux");
 
 		_prtoutmsg("Create New Config ... ");
+	}
+
+	if (check_file_existence("Calcium-old.exe")) {
+		_fileapi_del("Calcium-old.exe");
+	}
+	if (check_file_existence("Calcium-old.lux")) {
+		_fileapi_del("Calcium-old.lux");
 	}
 	//Load Config
 	_prtendl();
@@ -247,6 +309,7 @@ int _HeadMainLoad() {
 	if (runmode == -1) {
 		_prtoutmsg("Calcium Software Core ");
 		_prtoutmsg("Based on OpenCLT ");
+		_prtoutmsg("Version :  " + ccversion_str + "  " + getversign() + " (" + to_string(VerSignID) + ") .");
 		_prtoutmsg("Github :  https://github.com/FoxaXuDecvin/calciumsoftwarecore");
 		_prtoutmsg(" command format :  ");
 		outcmdHelp();
@@ -403,7 +466,17 @@ int _HeadMainLoad() {
 		_prtoutmsg("Update Complete");
 		return 0;
 	}
-
+	if (runmode == 10041) {
+		if (UpdateCore()) {
+			_prtoutmsg("Update Complete");
+			return 0;
+		}
+		else {
+			_prtoutmsg("Update Failed");
+			return 0;
+		}
+	}
+	
 	_prtoutmsg("null \"int runmode =  " + to_string(runmode) + "\" to running this app. Please report for developer");
 	return 0;
 }
